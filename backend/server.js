@@ -93,7 +93,6 @@ app.delete('/delete/:name', auth, async (req, res) => {
 app.get('/health', (req, res) => res.json({ status: 'ApnaCloud is Online' }));
 
 
-// Initial Admin User Setup
 const seedAdmin = () => {
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@apnacloud.me';
   const adminPass = process.env.ADMIN_PASSWORD || 'admin123';
@@ -107,8 +106,24 @@ const seedAdmin = () => {
   }
 };
 
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', async () => {
   seedAdmin();
   console.log(`[ApnaCloud] Server running on http://10.150.250.115:${PORT}`);
+  
+  // Automate Ngrok if Token is present
+  if (process.env.NGROK_AUTH_TOKEN) {
+    try {
+        const ngrok = require('ngrok');
+        await ngrok.authtoken(process.env.NGROK_AUTH_TOKEN);
+        const url = await ngrok.connect({
+            addr: PORT,
+            domain: "rodolfo-daughterly-darci.ngrok-free.dev" // Custom domain provided by user
+        });
+        console.log(`[ApnaCloud] 🌐 Tunnel Securely Active: ${url}`);
+        console.log(`[ApnaCloud] Dashboard: ${url}/api/system/stats`);
+    } catch (err) {
+        console.error(`[ApnaCloud] ⚠️ Ngrok failed to start: ${err.message}`);
+    }
+  }
 });
 
