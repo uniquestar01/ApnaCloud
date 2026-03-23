@@ -1,5 +1,4 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
@@ -23,7 +22,7 @@ function App() {
   return (
     <AuthProvider>
       <div className="min-h-screen bg-black selection:bg-primary/30">
-        <BrowserRouter>
+        <Router>
           <Toaster 
             position="top-right"
             toastOptions={{
@@ -44,7 +43,7 @@ function App() {
             {/* Catch all redirect */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
-        </BrowserRouter>
+        </Router>
       </div>
     </AuthProvider>
   );
