@@ -106,11 +106,10 @@ const seedAdmin = () => {
   }
 };
 
-app.listen(PORT, '0.0.0.0', async () => {
+app.listen(5000, '0.0.0.0', async () => {
   seedAdmin();
-  // '0.0.0.0' allows access from any device on your local network/WIFI
-  console.log(`[ApnaCloud] Server running on port ${PORT} (Network Access Enabled)`);
-  console.log(`[ApnaCloud] Local URL: http://10.150.250.115:${PORT}`);
+  console.log("Server running on port 5000");
+  // '0.0.0.0' allows network access from other devices
   
   // Automate Ngrok if Token is present
   if (process.env.NGROK_AUTH_TOKEN) {
