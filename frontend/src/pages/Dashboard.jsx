@@ -1,254 +1,302 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Cloud, HardDrive, FileText, Activity, TrendingUp, ChevronRight,
-  Plus, Upload, ShieldCheck, Cpu, Zap, Thermometer
+  Plus, Upload, ShieldCheck, Cpu, Zap, Thermometer,
+  Grid, List, Trash2, Download, Search, Settings, 
+  LayoutDashboard, Share2, LogOut, User, Bell, Menu, X
 } from 'lucide-react';
-import { systemService } from '../services/api';
-import { Link } from 'react-router-dom';
-import { DashboardSkeleton } from '../components/Skeleton';
+import { fileService, systemService } from '../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 const Dashboard = () => {
+  const [files, setFiles] = useState([]);
   const [stats, setStats] = useState(null);
-  const [recentActions, setRecentActions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState('grid'); // grid or list
+  const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 5000); // Auto refresh every 5s
+    const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
   }, []);
 
   const fetchData = async () => {
     try {
-      const [statsRes, activityRes] = await Promise.all([
-        systemService.getStats(),
-        systemService.getActivity()
+      const [filesRes, statsRes] = await Promise.all([
+        fileService.getFiles(),
+        systemService.getStats()
       ]);
+      setFiles(filesRes.data || []);
       setStats(statsRes.data);
-      setRecentActions(activityRes.data || []);
     } catch (err) {
       console.error(err);
     } finally {
-      if (loading) setTimeout(() => setLoading(false), 800);
+      if (loading) setTimeout(() => setLoading(false), 500);
     }
   };
 
-  if (loading || !stats) return <div className="max-w-7xl mx-auto p-8"><DashboardSkeleton /></div>;
+  const handleUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  const usedPercent = parseFloat(stats.storage.percent);
+    const toastId = toast.loading(`Uploading ${file.name}...`);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      await fileService.uploadFile(formData);
+      toast.success('Transmission Complete', { id: toastId });
+      fetchData();
+    } catch (err) {
+      toast.error('Upload Failed', { id: toastId });
+    }
+  };
+
+  const handleDelete = async (name) => {
+    try {
+      await fileService.deleteFile(name);
+      toast.success('Data Removed');
+      fetchData();
+    } catch (err) {
+      toast.error('Deletion Failed');
+    }
+  };
+
+  const filteredFiles = files.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  if (loading || !stats) return (
+    <div className="min-h-screen bg-black flex items-center justify-center">
+       <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: "linear" }}>
+          <Cloud className="text-primary" size={48} />
+       </motion.div>
+    </div>
+  );
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="max-w-7xl mx-auto space-y-12 pb-24"
-    >
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-8 py-6">
-        <div>
-          <motion.p 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="text-primary font-black uppercase tracking-[0.3em] text-[10px] mb-3"
-          >
-            Terminal Node: 10.150.250.115
-          </motion.p>
-          <h1 className="text-6xl font-black text-slate-900 tracking-tighter leading-none dark:text-white">
-            ApnaCloud <span className="text-primary">NAS</span>
-          </h1>
-        </div>
-        <Link to="/files" className="btn-primary group flex items-center gap-4 px-10 py-5 shadow-[0_20px_50px_rgba(37,99,235,0.3)] rounded-[2rem] font-black uppercase text-xs tracking-widest hover:scale-105 active:scale-95 transition-all">
-           <Plus size={20} className="group-hover:rotate-90 transition-transform duration-500" />
-           <span>Initialize Stream</span>
-        </Link>
-      </header>
-
-      {/* Primary Hardware Matrix */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        <div className="lg:col-span-8 glass rounded-[4rem] p-12 border-white/20 relative overflow-hidden group shadow-2xl dark:bg-slate-900/40">
-          <div className="absolute -top-32 -right-32 w-[30rem] h-[30rem] bg-primary/5 rounded-full blur-[120px] group-hover:bg-primary/10 transition-all duration-1000" />
-          
-          <div className="flex items-center justify-between mb-12">
-            <h3 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-4 uppercase tracking-tighter">
-              <HardDrive className="text-primary" size={32} /> Storage Core
-            </h3>
-            <div className="px-4 py-2 bg-slate-900/5 dark:bg-white/5 rounded-full border border-slate-900/5 dark:border-white/5 text-[10px] font-black uppercase tracking-widest text-slate-500">
-                Health: 99.9%
+    <div className="flex min-h-screen bg-black text-white font-['Outfit'] overflow-hidden">
+      {/* Sidebar */}
+      <motion.aside 
+        initial={false}
+        animate={{ width: isSidebarOpen ? 280 : 0 }}
+        className="glass-pane border-r border-white/5 z-30 relative overflow-hidden hidden lg:block"
+      >
+        <div className="p-8 h-full flex flex-col w-[280px]">
+          <div className="flex items-center gap-4 mb-12">
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+              <Cloud className="text-white" size={24} />
             </div>
+            <span className="text-xl font-black tracking-tight">ApnaCloud</span>
           </div>
 
-          <div className="flex flex-col md:flex-row items-center gap-20">
-            <div className="relative w-72 h-72 flex items-center justify-center">
-              <svg className="w-full h-full transform -rotate-90">
-                <circle cx="144" cy="144" r="130" strokeWidth="24" stroke="rgba(203, 213, 225, 0.15)" fill="none" />
-                <motion.circle 
-                  cx="144" cy="144" r="130" strokeWidth="24" stroke="currentColor" fill="none"
-                  strokeDasharray={2 * Math.PI * 130}
-                  initial={{ strokeDashoffset: 2 * Math.PI * 130 }}
-                  animate={{ strokeDashoffset: 2 * Math.PI * 130 * (1 - usedPercent / 100) }}
-                  transition={{ duration: 2, ease: "circOut" }}
-                  className="text-primary drop-shadow-[0_0_15px_rgba(37,99,235,0.4)]"
-                  style={{ strokeLinecap: 'round' }}
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                 <motion.span 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="text-7xl font-black text-slate-900 dark:text-white tracking-tighter"
-                 >
-                    {Math.round(usedPercent)}%
-                 </motion.span>
-                 <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] mt-3">Allocated</span>
+          <nav className="space-y-2 flex-1">
+            <SidebarLink icon={<LayoutDashboard size={20}/>} label="Node Status" active />
+            <SidebarLink icon={<FileText size={20}/>} label="Storage" />
+            <SidebarLink icon={<Share2 size={20}/>} label="Shared Nodes" />
+            <SidebarLink icon={<Activity size={20}/>} label="Activity" />
+            <SidebarLink icon={<Settings size={20}/>} label="Preferences" />
+          </nav>
+
+          <div className="mt-8 p-6 glass-card rounded-3xl border border-white/5">
+             <div className="flex items-center justify-between mb-4">
+               <span className="text-[10px] font-black text-slate-500 uppercase">Storage</span>
+               <span className="text-[10px] font-black text-primary uppercase">{stats.storage.percent}%</span>
+             </div>
+             <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+               <div className="h-full bg-primary" style={{ width: `${stats.storage.percent}%` }} />
+             </div>
+             <p className="text-[10px] text-slate-500 mt-4 font-bold uppercase">{(stats.storage.free / (1024**3)).toFixed(1)}GB Available</p>
+          </div>
+
+          <button className="mt-8 flex items-center gap-4 text-slate-500 hover:text-white transition-colors px-4 py-2">
+            <LogOut size={20} />
+            <span className="text-sm font-bold">Logout</span>
+          </button>
+        </div>
+      </motion.aside>
+
+      {/* Main Content */}
+      <main className="flex-1 h-screen overflow-y-auto relative scrollbar-hide">
+        {/* Top Navbar */}
+        <header className="sticky top-0 z-20 glass-pane border-b border-white/5 p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+           <div className="relative w-full md:w-96 group">
+             <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors" size={18} />
+             <input 
+              type="text" 
+              placeholder="Query files in node..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="input-premium pl-14 py-3 text-sm focus:py-3"
+             />
+           </div>
+
+           <div className="flex items-center gap-6">
+              <button className="relative p-2 text-slate-400 hover:text-white transition-colors">
+                 <Bell size={24} />
+                 <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-black" />
+              </button>
+              <div className="flex items-center gap-4 pl-6 border-l border-white/5">
+                 <div className="text-right">
+                    <p className="text-sm font-black tracking-tight">Admin Node</p>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Master Key Access</p>
+                 </div>
+                 <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/5 overflow-hidden">
+                    <User className="text-primary" size={24} />
+                 </div>
               </div>
-            </div>
+           </div>
+        </header>
 
-            <div className="flex-1 space-y-8 w-full">
-               <div className="grid grid-cols-2 gap-6">
-                 <div className="p-8 bg-slate-50/50 dark:bg-slate-800/20 rounded-[2.5rem] border border-slate-100/50 dark:border-white/5 hover:bg-white dark:hover:bg-slate-800 hover:shadow-xl transition-all group/card">
-                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-3">Total Volume</p>
-                    <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter group-hover:text-primary transition-colors">
-                        {(stats.storage.total / (1024**3)).toFixed(1)}<span className="text-lg ml-1">GB</span>
-                    </p>
-                 </div>
-                 <div className="p-8 bg-slate-50/50 dark:bg-slate-800/20 rounded-[2.5rem] border border-slate-100/50 dark:border-white/5 hover:bg-white dark:hover:bg-slate-800 hover:shadow-xl transition-all group/card">
-                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-3">Free Space</p>
-                    <p className="text-4xl font-black text-primary tracking-tighter">
-                        {(stats.storage.free / (1024**3)).toFixed(1)}<span className="text-lg ml-1">GB</span>
-                    </p>
-                 </div>
-               </div>
-               <div className="p-8 bg-slate-900 rounded-[2.5rem] text-white flex items-center justify-between shadow-2xl relative overflow-hidden group cursor-pointer">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary blur-3xl opacity-20" />
-                  <div className="flex items-center gap-6 relative z-10">
-                    <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center">
-                        <ShieldCheck className="text-primary" size={28} />
-                    </div>
-                    <div>
-                        <p className="text-lg font-black tracking-tight leading-none">Security Node Active</p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">End-to-End Encrypted</p>
-                    </div>
-                  </div>
-                  <ChevronRight size={24} className="text-slate-500 group-hover:translate-x-2 transition-transform" />
-               </div>
-            </div>
-          </div>
-        </div>
+        <div className="p-8 lg:p-12 space-y-12 pb-32">
+          {/* Hero Hardware Stats */}
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <StatCard icon={<Cpu className="text-amber-500" />} label="CPU Matrix" val={`${stats.cpu.load}%`} color="amber" />
+            <StatCard icon={<Zap className="text-emerald-500" />} label="Memory Node" val={`${stats.memory.percent}%`} color="emerald" />
+            <StatCard icon={<Thermometer className="text-rose-500" />} label="Thermal Node" val={`${stats.cpu.temp}°C`} color="rose" />
+          </section>
 
-        <div className="lg:col-span-4 flex flex-col gap-8">
-            {/* CPU Monitor */}
-            <div className="glass rounded-[3rem] p-10 border-white/20 flex-1 flex flex-col justify-between group relative overflow-hidden dark:bg-slate-900/40">
-                <div className="absolute -top-12 -right-12 w-32 h-32 bg-amber-500/5 blur-3xl group-hover:bg-amber-500/10 transition-all" />
-                <div className="flex items-center justify-between mb-8">
-                    <div className="w-16 h-16 bg-amber-50 dark:bg-amber-900/20 rounded-3xl flex items-center justify-center text-amber-500 border border-amber-100 dark:border-amber-900/20">
-                        <Cpu size={32} />
-                    </div>
-                    <div className="text-right">
-                        <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">{stats.cpu.load}%</p>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">CPU Load</p>
-                    </div>
-                </div>
-                <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${stats.cpu.load}%` }}
-                        className="h-full bg-amber-500 rounded-full"
-                    />
-                </div>
-            </div>
+          {/* File Explorer Header */}
+          <section className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+             <div>
+               <h2 className="text-4xl font-black tracking-tighter mb-2">Node Storage</h2>
+               <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.2em]">Manage decentralized data streams</p>
+             </div>
 
-            {/* RAM Monitor */}
-            <div className="glass rounded-[3rem] p-10 border-white/20 flex-1 flex flex-col justify-between group relative overflow-hidden dark:bg-slate-900/40">
-                <div className="absolute -top-12 -right-12 w-32 h-32 bg-emerald-500/5 blur-3xl group-hover:bg-emerald-500/10 transition-all" />
-                <div className="flex items-center justify-between mb-8">
-                    <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-3xl flex items-center justify-center text-emerald-500 border border-emerald-100 dark:border-emerald-900/20">
-                        <Zap size={32} />
-                    </div>
-                    <div className="text-right">
-                        <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">{stats.memory.percent}%</p>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">RAM Usage</p>
-                    </div>
-                </div>
-                <div className="flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-tighter mt-4">
-                    <span>{(stats.memory.used / (1024**3)).toFixed(1)}GB Used</span>
-                    <span>{(stats.memory.total / (1024**3)).toFixed(1)}GB Total</span>
-                </div>
-            </div>
+             <div className="flex items-center gap-4 bg-white/5 p-2 rounded-2xl border border-white/5">
+                <button 
+                  onClick={() => setViewMode('grid')}
+                  className={`p-3 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-primary text-white shadow-xl shadow-primary/30' : 'text-slate-500 hover:text-white'}`}
+                >
+                  <Grid size={20} />
+                </button>
+                <button 
+                  onClick={() => setViewMode('list')}
+                  className={`p-3 rounded-xl transition-all ${viewMode === 'list' ? 'bg-primary text-white shadow-xl shadow-primary/30' : 'text-slate-500 hover:text-white'}`}
+                >
+                  <List size={20} />
+                </button>
+                <div className="w-[1px] h-8 bg-white/5 mx-2" />
+                <label className="btn-premium flex items-center gap-3 cursor-pointer py-3 hover:scale-105 active:scale-95 shadow-xl shadow-primary/20">
+                   <Upload size={18} />
+                   <span className="text-xs uppercase font-black tracking-widest">Upload Data</span>
+                   <input type="file" className="hidden" onChange={handleUpload} />
+                </label>
+             </div>
+          </section>
 
-            {/* Thermal Node */}
-            <div className="bg-slate-900 rounded-[3rem] p-10 text-white flex-1 flex flex-col justify-between relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-48 h-48 bg-red-500 blur-[80px] opacity-10 group-hover:opacity-20 transition-opacity" />
-                <div className="flex items-center justify-between">
-                    <Thermometer className="text-red-500" size={32} />
-                    <div className="text-right">
-                        <p className="text-4xl font-black tracking-tighter">{stats.cpu.temp}°<span className="text-xl">C</span></p>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Processor Heat</p>
-                    </div>
-                </div>
-                <p className="text-xs font-bold text-slate-500 leading-relaxed mt-6">
-                    Hardware operating within <span className="text-emerald-500">safe thermal limits</span>. Cooling fans active.
-                </p>
-            </div>
-        </div>
-      </div>
-
-      <div className="glass rounded-[4rem] p-12 border-white/20 shadow-2xl overflow-hidden relative min-h-[500px] dark:bg-slate-900/40">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 blur-[120px]" />
-        
-        <div className="flex items-center justify-between mb-12 relative z-10">
-          <div>
-            <h3 className="text-3xl font-black text-slate-900 dark:text-white flex items-center gap-4 uppercase tracking-tighter">
-                <Activity className="text-primary" size={32} /> Transmission Log
-            </h3>
-            <p className="text-xs font-bold text-slate-400 mt-2">Real-time network packet monitoring active.</p>
-          </div>
-          <div className="flex items-center gap-3 px-6 py-3 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
-             <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]" />
-             <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">System Online</span>
-          </div>
-        </div>
-
-        <div className="space-y-6 relative z-10">
-          <AnimatePresence>
-            {recentActions.length > 0 ? recentActions.map((action, i) => (
+          {/* Files Main Visual */}
+          <AnimatePresence mode="wait">
+            {filteredFiles.length === 0 ? (
               <motion.div 
-                key={action.id || i}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="flex items-center justify-between p-8 bg-white/40 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800 hover:shadow-2xl rounded-[2.5rem] border border-transparent hover:border-slate-100 dark:hover:border-white/5 transition-all group"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="glass-card rounded-[3rem] p-32 flex flex-col items-center justify-center text-center opacity-50"
               >
-                <div className="flex items-center gap-8">
-                  <div className="w-16 h-16 rounded-[1.8rem] bg-slate-50 dark:bg-slate-900/50 flex items-center justify-center text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-all duration-500 border border-slate-100/50 dark:border-white/5">
-                    <Zap size={24} />
-                  </div>
-                  <div>
-                    <p className="text-lg font-black text-slate-800 dark:text-slate-200 tracking-tight group-hover:text-primary transition-colors">{action.details}</p>
-                    <div className="flex items-center gap-3 mt-2">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                           {new Date(action.timestamp).toLocaleTimeString()}
-                        </span>
-                        <div className="w-1 h-1 bg-slate-300 rounded-full" />
-                        <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Verified Link</span>
-                    </div>
-                  </div>
+                <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mb-8">
+                   <Cloud size={48} className="text-slate-700" />
                 </div>
-                <div className="flex items-center gap-4">
-                    <div className="text-right hidden md:block">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Node User</p>
-                        <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{action.email}</p>
-                    </div>
-                    <ChevronRight size={22} className="text-slate-200 group-hover:text-primary transition-transform group-hover:translate-x-2" />
+                <h3 className="text-xl font-bold tracking-tight mb-2">No data packets found</h3>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-600">Initialize a stream to begin storage</p>
+              </motion.div>
+            ) : viewMode === 'grid' ? (
+              <motion.div 
+                key="grid" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
+              >
+                {filteredFiles.map((file, i) => (
+                  <motion.div 
+                    key={file.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                    className="glass-card p-6 rounded-[2.5rem] group relative overflow-hidden flex flex-col"
+                  >
+                     <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary/20 group-hover:text-primary transition-all duration-500">
+                        <FileText size={24} />
+                     </div>
+                     <h4 className="font-bold text-slate-100 truncate mb-1">{file.name}</h4>
+                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{(file.size / (1024*1024)).toFixed(2)} MB</p>
+                     
+                     <div className="mt-8 flex items-center gap-3 pt-6 border-t border-white/5">
+                        <a href={fileService.getDownloadUrl(file.name)} download className="flex-1 py-3 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center transition-colors">
+                           <Download size={16} />
+                        </a>
+                        <button onClick={() => handleDelete(file.name)} className="flex-1 py-3 bg-white/5 hover:bg-red-500/10 hover:text-red-500 rounded-xl flex items-center justify-center transition-colors">
+                           <Trash2 size={16} />
+                        </button>
+                     </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            ) : (
+              <motion.div 
+                key="list" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
+                className="glass-card rounded-[3rem] overflow-hidden"
+              >
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-white/5 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                        <th className="px-10 py-6">Identity</th>
+                        <th className="px-6 py-6 font-bold">Volume</th>
+                        <th className="px-6 py-6 text-right">Node Controls</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {filteredFiles.map((file) => (
+                        <tr key={file.id} className="group hover:bg-white/[0.02] transition-colors">
+                          <td className="px-10 py-6">
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors">
+                                <FileText size={18} />
+                              </div>
+                              <span className="font-bold text-slate-200">{file.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-6 text-sm font-black text-slate-500">
+                            {(file.size / (1024*1024)).toFixed(2)} MB
+                          </td>
+                          <td className="px-6 py-6">
+                             <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <a href={fileService.getDownloadUrl(file.name)} download className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all">
+                                   <Download size={16} />
+                                </a>
+                                <button onClick={() => handleDelete(file.name)} className="p-3 bg-white/5 hover:bg-red-500/10 hover:text-red-500 rounded-xl transition-all">
+                                   <Trash2 size={16} />
+                                </button>
+                             </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </motion.div>
-            )) : (
-              <div className="text-center py-20 text-slate-400 font-bold uppercase tracking-widest text-xs">No activity packets found</div>
             )}
           </AnimatePresence>
         </div>
-      </div>
-    </motion.div>
+      </main>
+    </div>
   );
 };
+
+const SidebarLink = ({ icon, label, active = false }) => (
+  <button className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all ${active ? 'bg-primary/10 text-primary border border-primary/20 shadow-xl shadow-primary/20' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`}>
+    {icon}
+    <span className="text-sm tracking-tight">{label}</span>
+  </button>
+);
+
+const StatCard = ({ icon, label, val, color }) => (
+  <div className="glass-card p-10 rounded-[3rem] group relative overflow-hidden">
+    <div className={`absolute -top-12 -right-12 w-32 h-32 bg-${color}-500/5 blur-3xl group-hover:bg-${color}-500/10 transition-all`} />
+    <div className="flex items-center justify-between mb-8">
+      <div className={`w-16 h-16 bg-${color}-500/5 rounded-3xl flex items-center justify-center border border-${color}-500/10`}>
+        {icon}
+      </div>
+      <div className="text-right">
+        <p className="text-3xl font-black tracking-tighter">{val}</p>
+        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">{label}</p>
+      </div>
+    </div>
+  </div>
+);
 
 export default Dashboard;

@@ -89,6 +89,17 @@ app.delete('/delete/:name', auth, async (req, res) => {
   }
 });
 
+// Login (User Requirement)
+app.post("/login", (req, res) => {
+  const { email, password } = req.body;
+  if (email === "admin@apnacloud.me" && password === "1234") {
+    // Generate simple success response (can be extended with JWT if needed)
+    res.json({ success: true, email: "admin@apnacloud.me", role: "admin" });
+  } else {
+    res.status(401).json({ success: false, error: "Invalid credentials" });
+  }
+});
+
 // Health Check
 app.get('/health', (req, res) => res.json({ status: 'ApnaCloud is Online' }));
 

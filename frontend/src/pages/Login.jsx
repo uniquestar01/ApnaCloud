@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Cloud, Mail, Key, ShieldCheck, ArrowRight, Loader2 } from 'lucide-react';
+import { ShieldCheck, Mail, Lock, Loader2, Rocket, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 const Login = () => {
@@ -15,103 +16,106 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await login(email, password);
-      toast.success('Authentication Wave Verified');
-      navigate('/');
+      // Use the simplified login endpoint provided by user
+      const res = await fetch('http://10.150.250.115:5000/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        // Simulating the context login for session management
+        localStorage.setItem('user', JSON.stringify({ email: data.email, role: data.role }));
+        localStorage.setItem('token', 'simulated-token'); // Simple session
+        window.location.href = '/';
+        toast.success('Welcome to the Future');
+      } else {
+        toast.error(data.error || 'Invalid Identity');
+      }
     } catch (err) {
-      toast.error('Identity Mismatch Detected');
+      toast.error('Network node unreachable');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-primary/10 via-slate-50 to-slate-50">
-      
-      {/* Background Cinematic Elements */}
-      <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden opacity-20">
-         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary blur-[160px] rounded-full animate-pulse" />
-         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-emerald-400 blur-[140px] rounded-full opacity-30" />
-      </div>
+    <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden bg-black">
+      {/* Animated Background Elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 rounded-full blur-[120px] animate-pulse" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px]" />
 
-      <div className="w-full max-w-md relative z-10">
-        <div className="flex flex-col items-center mb-10 text-center group">
-          <div className="w-20 h-20 bg-primary rounded-[2rem] flex items-center justify-center shadow-[0_20px_50px_rgba(37,99,235,0.4)] mb-6 transition-all group-hover:scale-110 group-hover:rotate-6">
-            <Cloud className="text-white" size={40} />
-          </div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tighter leading-none mb-2">ApnaCloud</h1>
-          <p className="text-xs font-black text-primary uppercase tracking-[0.3em]">Secure Data Terminal</p>
-        </div>
+      <motion.div 
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="w-full max-w-md relative z-10"
+      >
+        <div className="glass-pane p-10 md:p-12 rounded-[3rem] border border-white/10 shadow-[0_0_80px_-20px_rgba(37,99,235,0.2)]">
+          <header className="text-center mb-10">
+            <motion.div 
+              whileHover={{ rotate: 10, scale: 1.1 }}
+              className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-blue-500/30"
+            >
+              <Rocket className="text-white" size={36} />
+            </motion.div>
+            <h1 className="text-4xl font-black tracking-tighter text-white mb-2">ApnaCloud</h1>
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.3em]">Initialize Secure Node</p>
+          </header>
 
-        <div className="glass rounded-[3rem] p-10 border-white/40 shadow-[0_40px_100px_-20px_rgba(15,23,42,0.1)]">
-          <p className="text-center text-sm font-bold text-slate-400 mb-8 px-4 leading-relaxed">Please authenticate with your private credentials to access your Raspberry Pi storage node.</p>
-          
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-1.5 relative group">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Access Point</label>
-              <div className="relative">
-                <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-primary transition-all" size={20} />
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4">Node Mail</label>
+              <div className="relative group">
+                <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors" size={18} />
                 <input 
                   type="email" 
-                  placeholder="admin@apnacloud.me"
-                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl pl-16 pr-6 py-5 text-sm font-bold focus:outline-none focus:border-primary transition-all"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  required
+                  className="input-premium pl-14"
+                  placeholder="admin@apnacloud.me"
+                  required 
                 />
               </div>
             </div>
 
-            <div className="space-y-1.5 relative group">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Master Key</label>
-              <div className="relative">
-                <Key className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-primary transition-all" size={20} />
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4">Access Key</label>
+              <div className="relative group">
+                <Lock className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors" size={18} />
                 <input 
                   type="password" 
-                  placeholder="••••••••"
-                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl pl-16 pr-6 py-5 text-sm font-bold focus:outline-none focus:border-primary transition-all"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  required
+                  className="input-premium pl-14"
+                  placeholder="••••••••"
+                  required 
                 />
               </div>
             </div>
 
             <button 
+              type="submit" 
               disabled={loading}
-              className="w-full h-16 mt-8 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-black flex items-center justify-center gap-3 transition-all active:scale-95 shadow-2xl relative overflow-hidden group"
+              className="btn-premium w-full text-white text-sm font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 active:scale-95 shadow-[0_20px_50px_-10px_rgba(37,99,235,0.4)] glow-hover"
             >
-              {loading ? (
-                <>
-                  <Loader2 className="animate-spin" size={20} />
-                  <span className="text-sm uppercase tracking-widest">Verifying Identity...</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-sm uppercase tracking-widest">Initiate Access</span>
-                  <div className="absolute right-0 top-0 h-full w-12 bg-primary/20 flex items-center justify-center transition-all group-hover:w-full">
-                     <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </>
-              )}
+               {loading ? <Loader2 className="animate-spin" size={20} /> : (
+                 <>
+                   Sign In To Node <ArrowRight size={18} />
+                 </>
+               )}
             </button>
           </form>
 
-          <div className="mt-10 pt-8 border-t border-slate-50 flex flex-col items-center gap-4">
-             <div className="flex items-center gap-2 text-primary">
-                <ShieldCheck size={18} />
-                <p className="text-[10px] font-black uppercase tracking-widest">Encrypted SSL Transmission</p>
+          <footer className="mt-12 pt-8 border-t border-white/5 flex flex-col items-center gap-4">
+             <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+               <ShieldCheck className="text-blue-500" size={14} /> Encrypted Transmission
              </div>
-             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter text-center">
-                Access is restricted to authorized personnel only. <br/> IP Logged: 10.150.250.115
-             </p>
-          </div>
+          </footer>
         </div>
-      </div>
-
-      <footer className="mt-12 text-center relative z-10">
-         <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">Powered by Raspberry Pi 4 Node Architecture</p>
-      </footer>
+      </motion.div>
     </div>
   );
 };
