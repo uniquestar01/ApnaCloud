@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://10.150.250.115:5000';
+const BASE_URL = 'https://rodolfo-daughterly-darci.ngrok-free.dev/api';
 export const API_BASE = BASE_URL;
 
 const api = axios.create({
@@ -27,12 +27,12 @@ export const fileService = {
   }),
   deleteFile: (name) => api.delete(`/delete/${name}`),
   getDownloadUrl: (name) => `${BASE_URL}/download/${name}`,
-  getPreviewUrl: (id) => `${BASE_URL}/api/files/preview/${id}`
+  getPreviewUrl: (id) => `${BASE_URL}/files/preview/${id}`
 };
 
 export const systemService = {
-  getStats: () => api.get('/api/system/stats'),
-  getActivity: () => api.get('/api/system/activity')
+  getStats: () => api.get('/system/stats'),
+  getActivity: () => api.get('/system/activity')
 };
 
 export default api;
