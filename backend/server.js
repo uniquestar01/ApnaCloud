@@ -33,11 +33,16 @@ app.use('/api/files', fileRoutes);
 app.use('/api/share', shareRoutes);
 app.use('/api/system', systemRoutes);
 
-// Aliases for User Requirements (Unprefixed)
-const auth = require('./middleware/auth');
 const fsExtra = require('fs-extra');
 const multer = require('multer');
-const upload = multer({ dest: process.env.STORAGE_PATH || '/home/sakshi/apnacloud-storage' });
+
+// Ensure local storage exists
+const LOCAL_STORAGE = path.join(__dirname, 'storage');
+if (!fsExtra.existsSync(LOCAL_STORAGE)) {
+  fsExtra.mkdirSync(LOCAL_STORAGE, { recursive: true });
+}
+
+const upload = multer({ dest: LOCAL_STORAGE });
 
 app.get('/files', auth, (req, res) => {
   const files = db.prepare('SELECT * FROM files WHERE owner_id = ?').all(req.user.id);
@@ -46,26 +51,37 @@ app.get('/files', auth, (req, res) => {
 
 app.post('/upload', auth, upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-  const STORAGE_PATH = process.env.STORAGE_PATH || '/home/sakshi/apnacloud-storage';
-  const relativePath = req.file.originalname;
-  const finalPath = path.join(STORAGE_PATH, relativePath);
+  const finalPath = path.join(LOCAL_STORAGE, req.file.originalname);
   
   try {
     fsExtra.moveSync(req.file.path, finalPath, { overwrite: true });
     db.prepare('INSERT INTO files (name, path, size, type, is_folder, owner_id, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?)')
-      .run(req.file.originalname, relativePath, req.file.size, req.file.mimetype, 0, req.user.id, 0);
+      .run(req.file.originalname, req.file.originalname, req.file.size, req.file.mimetype, 0, req.user.id, 0);
     res.json({ message: 'Uploaded successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
+app.get('/download/:name', auth, (req, res) => {
+    const file = db.prepare('SELECT * FROM files WHERE name = ? AND owner_id = ?').get(req.params.name, req.user.id);
+    if (!file) return res.status(404).json({ error: 'File not found' });
+    const fullPath = path.join(LOCAL_STORAGE, file.path);
+    if (fsExtra.existsSync(fullPath)) {
+        res.download(fullPath, file.name);
+    } else {
+        res.status(404).json({ error: 'File missing on disk' });
+    }
+});
+
 app.delete('/delete/:name', auth, async (req, res) => {
   const file = db.prepare('SELECT * FROM files WHERE name = ? AND owner_id = ?').get(req.params.name, req.user.id);
   if (!file) return res.status(404).json({ error: 'File not found' });
-  const STORAGE_PATH = process.env.STORAGE_PATH || '/home/sakshi/apnacloud-storage';
   try {
-    await fsExtra.remove(path.join(STORAGE_PATH, file.path));
+    const fullPath = path.join(LOCAL_STORAGE, file.path);
+    if (await fsExtra.exists(fullPath)) {
+      await fsExtra.remove(fullPath);
+    }
     db.prepare('DELETE FROM files WHERE id = ?').run(file.id);
     res.json({ message: 'Deleted successfully' });
   } catch (err) {

@@ -26,6 +26,7 @@ export const fileService = {
     onUploadProgress: onProgress
   }),
   deleteFile: (name) => api.delete(`/delete/${name}`),
+  getDownloadUrl: (name) => `${BASE_URL}/download/${name}`,
   getPreviewUrl: (id) => `${BASE_URL}/api/files/preview/${id}`
 };
 

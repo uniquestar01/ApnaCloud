@@ -188,7 +188,7 @@ const FileManager = () => {
                     <button onClick={() => setDeletingFile(file)} className="w-12 h-12 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl transition-all">
                        <Trash2 size={20} />
                     </button>
-                    <a href={fileService.getPreviewUrl(file.id)} download className="w-12 h-12 flex items-center justify-center text-slate-300 hover:text-primary hover:bg-primary/10 rounded-2xl transition-all">
+                    <a href={fileService.getDownloadUrl(file.name)} download className="w-12 h-12 flex items-center justify-center text-slate-300 hover:text-primary hover:bg-primary/10 rounded-2xl transition-all">
                        <Download size={20} />
                     </a>
                   </div>
