@@ -1,4 +1,4 @@
-const API = "http://10.150.250.115:5000";
+const API = "https://rodolfo-daughterly-darci.ngrok-free.dev";
 export const API_BASE = API;
 
 // --- Helper for Authorized Fetch ---
@@ -11,7 +11,7 @@ const authFetch = async (url, options = {}) => {
   return fetch(url, { ...options, headers });
 };
 
-// --- User's Requested Fetch Functions ---
+// --- User's Requested Fetch Functions (FINAL) ---
 export const getFiles = async () => {
   const res = await authFetch(`${API}/files`);
   return res.json();
@@ -49,7 +49,7 @@ export const fileService = {
 export const systemService = {
   getStats: async () => {
     const res = await authFetch(`${API}/api/system/stats`);
-    return { data: await res.json() }; // Wrapped in data for axios compatibility
+    return { data: await res.json() };
   },
   getActivity: async () => {
     const res = await authFetch(`${API}/api/system/activity`);
