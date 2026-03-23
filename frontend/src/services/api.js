@@ -1,38 +1,60 @@
-import axios from 'axios';
+const API = "http://10.150.250.115:5000";
+export const API_BASE = API;
 
-const BASE_URL = 'https://rodolfo-daughterly-darci.ngrok-free.dev/api';
-export const API_BASE = BASE_URL;
-
-const api = axios.create({
-  baseURL: BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Interceptor for Auth
-api.interceptors.request.use((config) => {
+// --- Helper for Authorized Fetch ---
+const authFetch = async (url, options = {}) => {
   const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+  const headers = {
+    ...options.headers,
+    'Authorization': `Bearer ${token}`
+  };
+  return fetch(url, { ...options, headers });
+};
 
+// --- User's Requested Fetch Functions ---
+export const getFiles = async () => {
+  const res = await authFetch(`${API}/files`);
+  return res.json();
+};
+
+export const uploadFile = async (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await authFetch(`${API}/upload`, {
+    method: "POST",
+    body: formData,
+  });
+
+  return res.json();
+};
+
+export const deleteFile = async (name) => {
+  const res = await authFetch(`${API}/delete/${name}`, {
+    method: "DELETE",
+  });
+
+  return res.json();
+};
+
+// --- Compatibility Exports for Premium UI ---
 export const fileService = {
-  getFiles: () => api.get('/files'),
-  uploadFile: (formData, onProgress) => api.post('/upload', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-    onUploadProgress: onProgress
-  }),
-  deleteFile: (name) => api.delete(`/delete/${name}`),
-  getDownloadUrl: (name) => `${BASE_URL}/download/${name}`,
-  getPreviewUrl: (id) => `${BASE_URL}/files/preview/${id}`
+  getFiles,
+  uploadFile,
+  deleteFile,
+  getDownloadUrl: (name) => `${API}/download/${name}`,
+  getPreviewUrl: (id) => `${API}/api/files/preview/${id}`
 };
 
 export const systemService = {
-  getStats: () => api.get('/system/stats'),
-  getActivity: () => api.get('/system/activity')
+  getStats: async () => {
+    const res = await authFetch(`${API}/api/system/stats`);
+    return { data: await res.json() }; // Wrapped in data for axios compatibility
+  },
+  getActivity: async () => {
+    const res = await authFetch(`${API}/api/system/activity`);
+    return { data: await res.json() };
+  }
 };
 
-export default api;
+export default { getFiles, uploadFile, deleteFile };
