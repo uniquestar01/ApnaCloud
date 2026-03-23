@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Download, File as FileIcon, Clock, ShieldCheck, Loader2, AlertCircle } from 'lucide-react';
 import axios from 'axios';
-import { API_BASE } from '../utils/api';
+import { API_BASE } from '../services/api';
 
 const PublicShare = () => {
   const { token } = useParams();

@@ -4,19 +4,89 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="ApnaCloud - Your Private Secure Personal NAS" />
+    
+    <!-- Primary Meta Tags -->
+    <title>ApnaCloud | The Ultra-Premium Personal NAS</title>
+    <meta name="title" content="ApnaCloud | The Ultra-Premium Personal NAS" />
+    <meta name="description" content="Secure, decentralized, and ultra-fast personal cloud storage managed directly from your Raspberry Pi node." />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://apnacloud.me/" />
+    <meta property="og:title" content="ApnaCloud | The Ultra-Premium Personal NAS" />
+    <meta property="og:description" content="Secure, decentralized, and ultra-fast personal cloud storage managed directly from your Raspberry Pi node." />
+    <meta property="og:image" content="https://images.unsplash.com/photo-1600585154340-be6199f79499" />
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet">
-    <title>ApnaCloud | Personal Cloud</title>
-    <style>
-      #root { min-height: 100vh; font-family: 'Outfit', sans-serif; }
-      body { margin: 0; padding: 0; background: #F8FAFC; }
-    </style>
 
+    <style>
+      :root { --primary: #2563eb; }
+      #root { min-height: 100vh; font-family: 'Outfit', sans-serif; }
+      body { 
+        margin: 0; 
+        padding: 0; 
+        background: #020617; 
+        color: #f8fafc;
+        overflow-x: hidden;
+      }
+      
+      /* Initial Loader Style */
+      .initial-loader {
+        position: fixed;
+        inset: 0;
+        background: #020617;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity 0.5s ease;
+      }
+      .loader-logo {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        border-radius: 24px;
+        margin-bottom: 24px;
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37,99,235,0.4); }
+        70% { transform: scale(1.05); box-shadow: 0 0 40px 20px rgba(37,99,235,0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37,99,235,0); }
+      }
+      .loader-text {
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.5em;
+        font-size: 10px;
+        color: #2563eb;
+      }
+    </style>
   </head>
   <body>
+    <div id="initial-loader" class="initial-loader">
+      <div class="loader-logo"></div>
+      <div class="loader-text">Initializing Node</div>
+    </div>
+
     <div id="root"></div>
+
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // Hide loader once React mounts
+      window.addEventListener('load', () => {
+        const loader = document.getElementById('initial-loader');
+        if (loader) {
+          setTimeout(() => {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.remove(), 500);
+          }, 800);
+        }
+      });
+    </script>
   </body>
 </html>
